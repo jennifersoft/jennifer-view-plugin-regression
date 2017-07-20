@@ -1,0 +1,113 @@
+<div id="regression-main">
+    <div class="row">
+        <div class="col col-12">
+            <div class="box-component">
+                <div id="datepicker" class="datepicker">
+                    <div class="head">
+                        <div class="prev"><i class="icon-chevron-left"></i></div>
+                        <div class="title"></div>
+                        <div class="next"><i class="icon-chevron-right"></i></div>
+                    </div>
+                    <table class="body">
+                        <tr>
+                            <th>SU</th><th>MO</th><th>TU</th><th>WE</th><th>TH</th><th>FR</th><th>SA</th>
+                        </tr>
+                    </table>
+                </div>
+                <script data-vo="#datepicker" data-tpl="dates" type="text/template">
+                    <tr>
+                        <! for(var i = 0; i < dates.length; i++) { !>
+                        <td><!= dates[i] !></td>
+                        <! } !>
+                    </tr>
+                </script>
+            </div>
+
+            <div class="box-component">
+                <div id="oid_config" style="width: 300px;"></div>
+            </div>
+
+            <div class="box-component">
+                <div id="metric_box_y"></div>
+            </div>
+
+            <div class="box-component">
+                <div id="metric_box_x"></div>
+            </div>
+
+            <div class="box-component">
+                <a href="javascript:callRegressionData()" class="btn small">Run</a>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="hr"></div>
+    </div>
+
+    <ul id="metric_tab" class="tab top"></ul>
+
+    <div class="row">
+        <div class="col col-5" align="center">
+            <div id="metric_charts"></div>
+        </div>
+        <div class="col col-7">
+            <div id="metric_tables"></div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" name="theme" value="$theme" />
+
+<script id="tpl_table" type="text/template">
+    <table id="metric_table_<!= index !>" class="table simple stripeless large">
+        <thead>
+        <tr>
+            <th></th>
+            <th>Sum of squares</th>
+            <th>Degree of freedom</th>
+            <th>Mean square</th>
+            <th>F value</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Regression</td>
+            <td><!= ssr.toFixed(2) !></td>
+            <td><!= ssr_free !></td>
+            <td><!= msr.toFixed(2) !></td>
+            <td><!= f.toFixed(2) !></td>
+        </tr>
+        <tr>
+            <td>Error</td>
+            <td><!= sse.toFixed(2) !></td>
+            <td><!= sse_free !></td>
+            <td><!= mse.toFixed(2) !></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Total</td>
+            <td><!= sst.toFixed(2) !></td>
+            <td><!= sst_free !></td>
+            <td></td>
+            <td></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <table id="metric_table_result_<!= index !>" class="table simple stripeless large" style="width: 60%; margin-top: 30px;">
+        <thead>
+        <tr>
+            <th>Accuracy</th>
+            <th>b0</th>
+            <th>b1</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><!= r2.toFixed(2) !></td>
+            <td><!= b0 !></td>
+            <td><!= b1 !></td>
+        </tr>
+        </tbody>
+    </table>
+</script>

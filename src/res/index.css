@@ -1,0 +1,24 @@
+#regression-main {
+}
+
+#regression-main .box-component {
+    float: left;
+    margin-top: 10px;
+    margin-left: 10px;
+}
+
+#regression-main .row {
+    margin-bottom: 10px;
+}
+
+#regression-main .hr {
+    margin-top: 15px;
+}
+
+#regression-main #metric_tables {
+    margin-top: 30px;
+}
+
+#regression-main #metric_tab {
+    padding-top: 15px;
+}
