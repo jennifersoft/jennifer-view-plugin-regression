@@ -30,11 +30,13 @@ jui.define("chart.brush.dot", [ "util.base" ], function(_) {
                 var reg = datas[0].reg;
 
                 if(reg != null) {
+                    var xMax = this.axis.x.max();
+
                     g.append(this.svg.line({
                         x1: this.axis.x(0),
-                        x2: this.axis.x(reg.max),
+                        x2: this.axis.x(xMax),
                         y1: this.axis.y(reg.b0),
-                        y2: this.axis.y(reg.b0 + reg.b1 * this.axis.x.max()),
+                        y2: this.axis.y(reg.b0 + reg.b1 * xMax),
                         stroke: this.color(lineColor)
                     }));
                 }

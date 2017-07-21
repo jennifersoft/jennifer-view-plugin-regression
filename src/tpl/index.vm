@@ -64,7 +64,7 @@
         <tr>
             <th></th>
             <th>Sum of squares</th>
-            <th>Degree of freedom</th>
+            <th>Degrees of freedom</th>
             <th>Mean square</th>
             <th>F value</th>
         </tr>

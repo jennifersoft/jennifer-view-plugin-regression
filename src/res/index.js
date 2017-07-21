@@ -67,7 +67,7 @@ jui.ready([ "ui", "selectbox", "util.base" ], function(ui, select, _) {
                 findMetricsGroup(type);
             }
         });
-    }, 100);
+    }, 50);
 });
 
 function findMetricsGroup(group) {

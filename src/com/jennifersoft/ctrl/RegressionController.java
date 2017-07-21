@@ -1,4 +1,4 @@
-package com.aries.ctrl;
+package com.jennifersoft.ctrl;
 
 import org.json.JSONException;
 import org.springframework.stereotype.Controller;
