@@ -1,6 +1,5 @@
-package com.jennifersoft.ctrl;
+package com.aries.ctrl;
 
-import org.json.JSONException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,7 +11,7 @@ import org.springframework.web.servlet.ModelAndView;
 @RequestMapping(value = { "/plugin" })
 public class RegressionController {
     @RequestMapping(value = { "/regression" }, method = RequestMethod.GET)
-    public ModelAndView mainPage(WebRequest request) throws JSONException
+    public ModelAndView mainPage(WebRequest request)
     {
         ModelAndView modelAndView = new ModelAndView();
         ModelMap map = modelAndView.getModelMap();

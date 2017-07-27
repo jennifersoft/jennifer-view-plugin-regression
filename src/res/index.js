@@ -1,5 +1,6 @@
 var targetInstance = null, datePicker = null, metricsBoxX = null, metricsBoxY = null,
-    metricsCharts = [], metricsTab = null, metricsTabIndex = 0, tplTable = null;
+    metricsCharts = [], metricsTab = null, metricsTabIndex = 0, tplTable = null,
+    metricsList = [];
 
 jui.ready([ "ui", "selectbox", "util.base" ], function(ui, select, _) {
     tplTable = _.template($("#tpl_table").html());
@@ -71,21 +72,22 @@ jui.ready([ "ui", "selectbox", "util.base" ], function(ui, select, _) {
 });
 
 function findMetricsGroup(group) {
+    metricsList = [];
+
     $.getJSON("/metrics/avg_max/" + group, "format=json", function(data) {
-        var items = [];
-
         $.each(data, function(idx, value) {
-            var code = "ui.mx." + value[0];
+            var code = "ui.mx." + value[0],
+                metrics = {
+                    text: i18n.get(code),
+                    value: value[1],
+                    tooltip: i18n.get(code + ".tooltip")
+                };
 
-            items.push({
-                text: i18n.get(code),
-                value: value[1],
-                tooltip: i18n.get(code + ".tooltip")
-            });
+            metricsList.push(metrics)
         });
 
-        metricsBoxX.update(items);
-        metricsBoxY.update(items);
+        metricsBoxX.update(metricsList);
+        metricsBoxY.update(metricsList);
     });
 }
 
@@ -230,6 +232,25 @@ function createMetricsChart(index) {
 }
 
 function renderMetricsChart(metricsChart, xData, yData, callback) {
+    calculateRegression(xData, yData, function(reg, data, xMin, xMax, yMin, yMax) {
+        data[0].reg = {
+            b0: reg.b0,
+            b1: reg.b1,
+            max: xMax
+        };
+
+        metricsChart.updateWidget(0, { text: metricsBoxY.getData().text })
+        metricsChart.updateWidget(1, { text: metricsBoxX.getData().text })
+        metricsChart.axis(0).set("x", { domain: [ xMin, xMax ] });
+        metricsChart.axis(0).set("y", { domain: [ yMin, yMax ] });
+        metricsChart.axis(0).update(data);
+        metricsChart.render(true);
+
+        callback(reg);
+    });
+}
+
+function calculateRegression(xData, yData, callback) {
     var data = [],
         xMin = 99999,
         yMin = 99999,
@@ -272,22 +293,7 @@ function renderMetricsChart(metricsChart, xData, yData, callback) {
     }
 
     if(data.length > 0) {
-        var reg = getRegression(data, xSum / data.length, ySum / data.length);
-
-        data[0].reg = {
-            b0: reg.b0,
-            b1: reg.b1,
-            max: xMax
-        };
-
-        metricsChart.updateWidget(0, { text: metricsBoxY.getData().text })
-        metricsChart.updateWidget(1, { text: metricsBoxX.getData().text })
-        metricsChart.axis(0).set("x", { domain: [ xMin, xMax ] });
-        metricsChart.axis(0).set("y", { domain: [ yMin, yMax ] });
-        metricsChart.axis(0).update(data);
-        metricsChart.render(true);
-
-        callback(reg);
+        callback(getRegression(data, xSum / data.length, ySum / data.length), data, xMin, xMax, yMin, yMax);
     }
 }
 
@@ -338,5 +344,21 @@ function getRegression(data, xAvg, yAvg) {
         sst: ssr + sse,
         sst_free: data.length - 1,
         r2: ssr / sst // 결정계수
+    }
+}
+
+function callRegressionDataForTable(xMetrics, yMetrics) {
+    var $target = $("#oid_config").find("li.active a");
+    var sid = parseInt($target.data("sid")),
+        oid = parseInt($target.attr("value"));
+
+    if(!isNaN(oid)) {
+        updateMetricsData(sid, oid, xMetrics.value, function (xData) {
+            updateMetricsData(sid, oid, yMetrics.value, function (yData) {
+                calculateRegression(xData.dots, yData.dots, function(data, reg) {
+                    console.log(xMetrics.text + "->" + yMetrics.text, reg);
+                });
+            });
+        });
     }
 }
