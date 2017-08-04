@@ -1,5 +1,5 @@
 {
-  "title": "Simple Regression Analysis",
+  "title": "Regression-Diff Analysis",
   "description": "In simple linear regression, we predict scores on one variable from the scores on a second variable.",
   "version": "5.3.0",
   "mainUrl": "/plugin/regression",

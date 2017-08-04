@@ -28,15 +28,11 @@
             </div>
 
             <div class="box-component">
-                <div id="metric_box_y"></div>
+                <div id="metric_box"></div>
             </div>
 
             <div class="box-component">
-                <div id="metric_box_x"></div>
-            </div>
-
-            <div class="box-component">
-                <a href="javascript:callRegressionData()" class="btn small">Run</a>
+                <a id="btn_single_reg" class="btn small">Run</a>
             </div>
         </div>
     </div>
@@ -44,22 +40,30 @@
         <div class="hr"></div>
     </div>
 
-    <ul id="metric_tab" class="tab top"></ul>
-
     <div class="row">
-        <div class="col col-5" align="center">
-            <div id="metric_charts"></div>
-        </div>
-        <div class="col col-7">
-            <div id="metric_tables"></div>
+        <div class="col col-12">
+            <div id="metric_chart"></div>
         </div>
     </div>
 </div>
 
-<input type="hidden" name="theme" value="$theme" />
+<div id="metric_modal" class="msgbox" style="display: none; width: 1000px; height: 470px;">
+    <div class="head">
+        <span></span>
+        <a href="javascript:metricsModal.hide();" class="close"><i class="icon-exit"></i></a>
+    </div>
+    <div class="body">
+        <div class="row">
+            <div class="col" style="width: 400px;">
+                <div id="metric_detail_chart"></div>
+            </div>
+            <div class="col" id="metric_detail_tables" style="width: 550px; padding-top: 50px"></div>
+        </div>
+    </div>
+</div>
 
-<script id="tpl_table" type="text/template">
-    <table id="metric_table_<!= index !>" class="table simple stripeless large">
+<script id="tpl_detail_tables" type="text/template">
+    <table class="table simple stripeless large">
         <thead>
         <tr>
             <th></th>
@@ -94,7 +98,7 @@
         </tbody>
     </table>
 
-    <table id="metric_table_result_<!= index !>" class="table simple stripeless large" style="width: 60%; margin-top: 30px;">
+    <table class="table simple stripeless large" style="width: 60%; margin-top: 30px;">
         <thead>
         <tr>
             <th>Accuracy</th>
@@ -111,3 +115,5 @@
         </tbody>
     </table>
 </script>
+
+<input type="hidden" name="theme" value="$theme" />

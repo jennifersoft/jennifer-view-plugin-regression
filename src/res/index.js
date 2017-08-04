@@ -1,9 +1,9 @@
-var targetInstance = null, datePicker = null, metricsBoxX = null, metricsBoxY = null,
-    metricsCharts = [], metricsTab = null, metricsTabIndex = 0, tplTable = null,
-    metricsList = [];
+var targetInstance = null, datePicker = null, metricsBox = null,
+    metricsChart = null, metricsDetailChart = null, metricsModal = null, tplTable = null,
+    isInit = true;
 
-jui.ready([ "ui", "selectbox", "util.base" ], function(ui, select, _) {
-    tplTable = _.template($("#tpl_table").html());
+jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, select, builder, _) {
+    tplTable = _.template($("#tpl_detail_tables").html());
 
     datePicker = ui.timezonepicker("#datepicker", {
         event: {
@@ -14,181 +14,123 @@ jui.ready([ "ui", "selectbox", "util.base" ], function(ui, select, _) {
         }
     });
 
-    metricsBoxX = select("#metric_box_x", {
-        title: "X-Axis",
-        type: "single",
+    metricsBox = select("#metric_box", {
+        title: "Metrics",
+        type: "multi",
         width: 300,
         tooltip: true
     });
 
-    metricsBoxY = select("#metric_box_y", {
-        title: "Y-Axis",
-        type: "single",
-        width: 300,
-        tooltip: true
+    metricsModal = ui.modal("#metric_modal", {
+        opacity: 0,
+        autoHide: false
     });
 
-    metricsTab = ui.tab("#metric_tab", {
-        event: {
-            change: function(data) {
-                $("#metric_charts").children("div").hide();
-                $("#metric_tables").children("table").hide();
-                $("#metric_chart_" + data.index).show();
-                $("#metric_table_" + data.index).show();
-                $("#metric_table_result_" + data.index).show();
+    metricsChart = builder("#metric_chart", {
+        theme : $("input[name=theme]").val(),
+        padding : {
+            left : 180,
+            top : 180,
+            bottom : 10,
+            right : 10
+        },
+        height : 2300,
+        axis : [
+            {
+                x : {
+                    type : "block",
+                    domain : [],
+                    line : "solid",
+                    key : "xIndex",
+                    orient : "top",
+                    textRotate : function(elem) {
+                        elem.attr({ "text-anchor": "start" });
+                        return -90;
+                    }
+                },
+                y : {
+                    type : "block",
+                    domain : [],
+                    line : "solid",
+                    key : "yIndex"
+                }
+            }
 
-                if(metricsCharts[data.index]) {
-                    metricsCharts[data.index].resize();
+        ],
+        brush : {
+            type : "heatmap",
+            target : "value",
+            colors : function(d) {
+                if(d.value == 0) {
+                    return "transparent";
+                }
+
+                var value = (d.value > 1) ? 1 : d.value,
+                    h = (1.0 - value) * 240;
+
+                return "hsl(" + h + ", 100%, 50%)";
+            },
+            format : function(d) {
+                if(d.value > 0) {
+                    return Math.round(d.value * 100);
+                }
+
+                return "";
+            }
+        },
+        widget : {
+            type : "tooltip",
+            format : function(data, key) {
+                return {
+                    key: data.xLabel,
+                    value: (data.value * 100).toFixed(2) + "%"
                 }
             }
         },
-        tpl: {
-            node: "<li><a href='#' data-index='<!= index !>'><!= text !></a></li>"
-        }
+        event : {
+            "click": function(obj, e) {
+                if(obj.data.value > 0) {
+                    var result = obj.data.result;
+
+                    $("#metric_modal").find(".head > span").html(obj.data.yLabel + " / " + obj.data.xLabel);
+                    $("#metric_detail_tables").html(tplTable(result.regression));
+
+                    result.data[0].reg = {
+                        b0: result.regression.b0,
+                        b1: result.regression.b1,
+                        max: result.xMax
+                    };
+
+                    metricsDetailChart.updateWidget(0, { text: obj.data.yLabel })
+                    metricsDetailChart.updateWidget(1, { text: obj.data.xLabel })
+                    metricsDetailChart.axis(0).set("x", { domain: [ result.xMin, result.xMax ] });
+                    metricsDetailChart.axis(0).set("y", { domain: [ result.yMin, result.yMax ] });
+                    metricsDetailChart.axis(0).update(result.data);
+                    metricsDetailChart.render(true);
+                    metricsModal.show();
+                }
+            }
+        },
+        style : {
+            heatmapBackgroundColor: "transparent",
+            heatmapBackgroundOpacity: 1,
+            heatmapHoverBackgroundOpacity: 0.2,
+            heatmapBorderColor: "#000",
+            heatmapBorderWidth: 0.5,
+            heatmapBorderOpacity: 0.1,
+            heatmapFontSize: 11,
+            heatmapFontColor: "#000",
+            gridTickBorderSize: 0,
+            gridXAxisBorderWidth: 1,
+            gridYAxisBorderWidth: 1
+        },
+        render : false
     });
 
-    setTimeout(function() {
-        var domainNodes = domainTree.listAll(),
-            domainIds = [];
-
-        for(var i = 0; i < domainNodes.length; i++) {
-            var data = domainNodes[i].data;
-
-            if(data.sid != -1) {
-                domainIds.push(data.sid);
-            }
-        }
-
-        targetInstance = createOidConfig(domainIds, "#oid_config", {
-            type: "single",
-            domainGroup: true,
-            activeMenu: "instance",
-            menu: [ "instance" ],
-            tabCallback: function(type) {
-                findMetricsGroup(type);
-            }
-        });
-    }, 50);
-});
-
-function findMetricsGroup(group) {
-    metricsList = [];
-
-    $.getJSON("/metrics/avg_max/" + group, "format=json", function(data) {
-        $.each(data, function(idx, value) {
-            var code = "ui.mx." + value[0],
-                metrics = {
-                    text: i18n.get(code),
-                    value: value[1],
-                    tooltip: i18n.get(code + ".tooltip")
-                };
-
-            metricsList.push(metrics)
-        });
-
-        metricsBoxX.update(metricsList);
-        metricsBoxY.update(metricsList);
-    });
-}
-
-function getParameters(sid, oid, mxid) {
-    var startMoment = datePicker.getDate();
-    startMoment.set('hour', 0);
-    startMoment.set('minute', 0);
-    startMoment.set('second', 0);
-    startMoment.set('millisecond', 0);
-
-    return {
-        sid: sid,
-        oid: oid,
-        otype: OTypeDef.SYSTEM,
-        mxid: mxid,
-        stime: startMoment.valueOf(),
-        etime: startMoment.valueOf() + (1000 * 60 * 60 * 24),
-        preferDotCount: 1440,
-        format: "json"
-    }
-}
-
-function updateMetricsData(sid, oid, mxid, callback) {
-    $.ajax({
-        url: "/analysis/performance",
-        data: getParameters(sid, oid, mxid),
-        dataType: "json",
-        success: function(data) {
-            if(typeof(callback) == "function") {
-                callback(data);
-            }
-        }
-    });
-}
-
-function callRegressionData() {
-    var $target = $("#oid_config").find("li.active a");
-    var sid = parseInt($target.data("sid")),
-        oid = parseInt($target.attr("value"));
-
-    if(!isNaN(oid)) {
-        var xMetrics = metricsBoxX.getValue(),
-            yMetrics = metricsBoxY.getValue(),
-            xMetricsName = metricsBoxX.getData().text,
-            yMetricsName = metricsBoxY.getData().text;
-
-        if(xMetrics != null && yMetrics != null) {
-            updateMetricsData(sid, oid, xMetrics, function (xData) {
-                updateMetricsData(sid, oid, yMetrics, function (yData) {
-                    metricsTab.append({
-                        text: yMetricsName + " / " + xMetricsName,
-                        index: metricsTabIndex
-                    });
-
-                    metricsTab.show(metricsTabIndex);
-
-                    $("#metric_charts").append("<div id='metric_chart_" + metricsTabIndex + "'></div>");
-
-                    setTimeout(function() {
-                        var chart = createMetricsChart(metricsTabIndex);
-                        metricsCharts.push(chart);
-
-                        renderMetricsChart(chart, xData.dots, yData.dots, function(reg) {
-                            $("#metric_tables").append(tplTable({
-                                index: metricsTabIndex,
-                                ssr: reg.ssr, // 회귀 - 제곱합/자유도/평균제곱/f값
-                                ssr_free: reg.ssr_free,
-                                msr: reg.msr,
-                                f: reg.f,
-
-                                sse: reg.sse, // 오차 - 제곱합/자유도/평균제곱
-                                sse_free: reg.sse_free,
-                                mse: reg.mse,
-
-                                sst: reg.sst,
-                                sst_free: reg.sst_free,
-
-                                r2: reg.r2,
-                                b0: reg.b0,
-                                b1: reg.b1
-                            }));
-                        });
-
-                        metricsTabIndex += 1;
-                    }, 100);
-                });
-            });
-        } else {
-            alert(i18n.get("M0014"));
-        }
-    } else {
-        alert(i18n.get("M0015"));
-    }
-}
-
-function createMetricsChart(index) {
-    return jui.create("chart.builder", "#metric_chart_" + index, {
+    metricsDetailChart = builder("#metric_detail_chart", {
         theme : $("input[name=theme]").val(),
-        padding : 60,
-        width : 500,
-        height : 500,
+        width : 400,
+        height : 400,
         axis : [{
             x : {
                 type : "range",
@@ -229,28 +171,157 @@ function createMetricsChart(index) {
         }],
         render : false
     });
+
+    setTimeout(function() {
+        var domainNodes = domainTree.listAll(),
+            domainIds = [];
+
+        for(var i = 0; i < domainNodes.length; i++) {
+            var data = domainNodes[i].data;
+
+            if(data.sid != -1) {
+                domainIds.push(data.sid);
+            }
+        }
+
+        targetInstance = createOidConfig(domainIds, "#oid_config", {
+            type: "single",
+            domainGroup: true,
+            activeMenu: "instance",
+            menu: [ "instance" ],
+            tabCallback: function(type) {
+                findMetricsGroup(type);
+            }
+        });
+    }, 50);
+
+    $("#btn_single_reg").on("click", function(e) {
+        var $target = $("#oid_config").find("li.active a");
+
+        var sid = parseInt($target.data("sid")),
+            oid = parseInt($target.attr("value"));
+
+        var names = [],
+            values = [],
+            metricsList = metricsBox.getData();
+
+        for(var y = 0; y < metricsList.length; y++) {
+            names.push(metricsList[y].text);
+            values.push(metricsList[y].value);
+        }
+
+        updateMetricsData(sid, oid, names, values, function(data) {
+            metricsChart.axis(0).set("x", { domain: names });
+            metricsChart.axis(0).set("y", { domain: names });
+            metricsChart.axis(0).update(data);
+            metricsChart.setSize("100%", metricsChart.axis(0).area("width"));
+            metricsChart.render(true);
+        });
+    });
+});
+
+function getParameters(sid, oid, metrics) {
+    var stime = datePicker.getTime(),
+        etime = stime + (1000 * 60 * 60 * 24),
+        interval = 1,
+        limit = 1440;
+
+    var funcs = [],
+        otypes = [],
+        oids = [];
+
+    for(var i = 0; i < metrics.length; i++) {
+        funcs.push(-1);
+        otypes.push(OTypeDef.SYSTEM);
+        oids.push(oid);
+    }
+
+    if(isNaN(oid)) {
+        return null;
+    }
+
+    return 'sid=' + sid + '&startTime=' + stime + '&endTime=' + etime + '&intervalInMinute=' + interval +
+        '&otypeList=' + otypes + '&oidsList=' + oids + '&metricsList=' + metrics + '&functionsList=' + funcs +
+        '&startIntervalIndex=' + 0 + '&intervalCountLimit=' + limit + "&format=json";
+
 }
 
-function renderMetricsChart(metricsChart, xData, yData, callback) {
-    calculateRegression(xData, yData, function(reg, data, xMin, xMax, yMin, yMax) {
-        data[0].reg = {
-            b0: reg.b0,
-            b1: reg.b1,
-            max: xMax
-        };
+function updateMetricsData(sid, oid, names, values, callback) {
+    var data = [];
 
-        metricsChart.updateWidget(0, { text: metricsBoxY.getData().text })
-        metricsChart.updateWidget(1, { text: metricsBoxX.getData().text })
-        metricsChart.axis(0).set("x", { domain: [ xMin, xMax ] });
-        metricsChart.axis(0).set("y", { domain: [ yMin, yMax ] });
-        metricsChart.axis(0).update(data);
-        metricsChart.render(true);
+    if(isInit) {
+        for(var y = 0; y < names.length; y++) {
+            for(var x = 0; x < names.length; x++) {
+                data.push({
+                    xIndex: x,
+                    yIndex: y,
+                    xLabel: names[x],
+                    yLabel: names[y],
+                    value: 0,
+                    result: null
+                });
+            }
+        }
 
-        callback(reg);
+        callback(data);
+        isInit = false;
+    } else {
+        if(!isNaN(oid)) {
+            $.getJSON('/db/metrics', getParameters(sid, oid, values), function (json) {
+                for(var y = 0; y < names.length; y++) {
+                    for(var x = 0; x < names.length; x++) {
+                        var yData = [],
+                            xData = [];
+
+                        for(var i = 0; i < json.length; i++) {
+                            yData.push(json[i][y + 1]);
+                            xData.push(json[i][x + 1]);
+                        }
+
+                        var result = calculateRegression(xData, yData);
+
+                        data.push({
+                            xIndex: x,
+                            yIndex: y,
+                            xLabel: names[x],
+                            yLabel: names[y],
+                            value: (isNaN(result.regression.r2)) ? 0 : result.regression.r2,
+                            result: result
+                        });
+                    }
+                }
+
+                callback(data);
+            });
+        }
+    }
+}
+
+function findMetricsGroup(group) {
+   var metricsList = [];
+
+    $.getJSON("/metrics/" + group, "format=json", function(data) {
+        $.each(data, function(idx, value) {
+            var code = "ui.mx." + value[0],
+                metrics = {
+                    text: i18n.get(code),
+                    value: value[1],
+                    tooltip: i18n.get(code + ".tooltip")
+                };
+
+            metricsList.push(metrics)
+        });
+
+        metricsBox.update(metricsList);
+        metricsBox.checkedAll(true);
+
+        if(isInit) {
+            $("#btn_single_reg").trigger("click");
+        }
     });
 }
 
-function calculateRegression(xData, yData, callback) {
+function calculateRegression(xData, yData) {
     var data = [],
         xMin = 99999,
         yMin = 99999,
@@ -259,26 +330,10 @@ function calculateRegression(xData, yData, callback) {
         xSum = 0,
         ySum = 0;
 
-    // xData = [
-    //     { value: 150 },
-    //     { value: 160 },
-    //     { value: 170 },
-    //     { value: 180 },
-    //     { value: 190 }
-    // ];
-    //
-    // yData = [
-    //     { value: 176 },
-    //     { value: 179 },
-    //     { value: 182 },
-    //     { value: 178 },
-    //     { value: 185 }
-    // ];
-
     for(var i = 0; i < xData.length; i++) {
         var obj = {
-            x: xData[i].value,
-            y: yData[i].value
+            x: xData[i],
+            y: yData[i]
         };
 
         if(obj.x > 0 || obj.y > 0) {
@@ -292,8 +347,13 @@ function calculateRegression(xData, yData, callback) {
         }
     }
 
-    if(data.length > 0) {
-        callback(getRegression(data, xSum / data.length, ySum / data.length), data, xMin, xMax, yMin, yMax);
+    return {
+        regression: getRegression(data, xSum / data.length, ySum / data.length),
+        data: data,
+        xMin: xMin,
+        yMin: yMin,
+        xMax: xMax,
+        yMax: yMax
     }
 }
 
@@ -344,21 +404,5 @@ function getRegression(data, xAvg, yAvg) {
         sst: ssr + sse,
         sst_free: data.length - 1,
         r2: ssr / sst // 결정계수
-    }
-}
-
-function callRegressionDataForTable(xMetrics, yMetrics) {
-    var $target = $("#oid_config").find("li.active a");
-    var sid = parseInt($target.data("sid")),
-        oid = parseInt($target.attr("value"));
-
-    if(!isNaN(oid)) {
-        updateMetricsData(sid, oid, xMetrics.value, function (xData) {
-            updateMetricsData(sid, oid, yMetrics.value, function (yData) {
-                calculateRegression(xData.dots, yData.dots, function(data, reg) {
-                    console.log(xMetrics.text + "->" + yMetrics.text, reg);
-                });
-            });
-        });
     }
 }
