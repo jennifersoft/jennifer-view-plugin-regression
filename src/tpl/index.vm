@@ -114,6 +114,19 @@
         </tr>
         </tbody>
     </table>
+
+    <div class="row" style="margin-top: 30px;">
+        <div class="group">
+            <div class="label small" id="metric_detail_label_input"></div>
+            <input id="metric_detail_input" type="number" class="input small" style="width: 80px;" />
+        </div>
+
+        <div class="group">
+            <div class="label small" id="metric_detail_label_output"></div>
+            <input id="metric_detail_output" type="number" class="input small" style="width: 80px;" />
+        </div>
+    </div>
+
 </script>
 
 <input type="hidden" name="theme" value="$theme" />

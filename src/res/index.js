@@ -80,6 +80,7 @@ jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, sele
         },
         widget : {
             type : "tooltip",
+            orient : "left",
             format : function(data, key) {
                 return {
                     key: data.xLabel,
@@ -94,6 +95,13 @@ jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, sele
 
                     $("#metric_modal").find(".head > span").html(obj.data.yLabel + " / " + obj.data.xLabel);
                     $("#metric_detail_tables").html(tplTable(result.regression));
+                    $("#metric_detail_label_input").html(obj.data.xLabel);
+                    $("#metric_detail_label_output").html(obj.data.yLabel);
+
+                    $("#metric_detail_input").off("keyup").on("keyup", function(e) {
+                        $("#metric_detail_output").val(result.regression.b0 +
+                            parseFloat($(this).val()) * result.regression.b1);
+                    });
 
                     result.data[0].reg = {
                         b0: result.regression.b0,
