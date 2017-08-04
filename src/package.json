@@ -1,10 +1,10 @@
 {
   "title": "Regression-Diff Analysis",
   "description": "In simple linear regression, we predict scores on one variable from the scores on a second variable.",
-  "version": "5.2.3.7",
+  "version": "5.2.3",
   "mainUrl": "/plugin/regression",
   "mainTpl": "tpl/index.vm",
-  "resources" : [ "res/index.css", "res/dot.js", "res/index.js" ],
+  "resources" : [ "res/index.css", "res/heatmap.js", "res/dot.js", "res/index.js" ],
   "thumbnails": [ "img/classic.png", "img/dark.png" ],
   "i18n": [ "i18n/message_ko.properties", "i18n/message_en.properties" ]
 }

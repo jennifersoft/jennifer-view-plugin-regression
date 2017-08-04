@@ -1,16 +1,33 @@
-var targetInstance = null, datePicker = null, metricsBox = null,
+var targetInstance = null, metricsBox = null, startDate = null, endDate = null,
     metricsChart = null, metricsDetailChart = null, metricsModal = null, tplTable = null,
-    isInit = true;
+    colorMap = null, isInit = true;
 
-jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, select, builder, _) {
+jui.ready([ "ui", "selectbox", "chart.builder", "util.base", "util.color" ], function(ui, select, builder, _, color) {
+    colorMap = color.map["pink"](20);
+
     tplTable = _.template($("#tpl_detail_tables").html());
 
-    datePicker = ui.timezonepicker("#datepicker", {
+    startDate = ui.timezonepicker("#start_date", {
+        event: {
+            select: function(date) {
+                var ldate = endDate.getDate().clone();
+                targetInstance.setTime(this.getTime(), ldate.add(1, "days").valueOf());
+            }
+        },
+        tpl: {
+            dates: $("#tpl_datepicker").html()
+        }
+    });
+
+    endDate = ui.timezonepicker("#end_date", {
         event: {
             select: function(date) {
                 var ldate = this.getDate().clone();
-                targetInstance.setTime(this.getTime(), ldate.add(1, "days").valueOf());
+                targetInstance.setTime(startDate.getTime(), ldate.add(1, "days").valueOf());
             }
+        },
+        tpl: {
+            dates: $("#tpl_datepicker").html()
         }
     });
 
@@ -65,10 +82,11 @@ jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, sele
                     return "transparent";
                 }
 
-                var value = (d.value > 1) ? 1 : d.value,
-                    h = (1.0 - value) * 240;
+                var count = colorMap.length - 1,
+                    value = (d.value > 1) ? 1 : d.value,
+                    index = Math.ceil(value * count);
 
-                return "hsl(" + h + ", 100%, 50%)";
+                return colorMap[count - index];
             },
             format : function(d) {
                 if(d.value > 0) {
@@ -127,7 +145,7 @@ jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, sele
             heatmapBorderWidth: 0.5,
             heatmapBorderOpacity: 0.1,
             heatmapFontSize: 11,
-            heatmapFontColor: "#000",
+            heatmapFontColor: "#fff",
             gridTickBorderSize: 0,
             gridXAxisBorderWidth: 1,
             gridYAxisBorderWidth: 1
@@ -196,7 +214,7 @@ jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, sele
             type: "single",
             domainGroup: true,
             activeMenu: "instance",
-            menu: [ "instance" ],
+            menu: [ "domain", "instance" ],
             tabCallback: function(type) {
                 findMetricsGroup(type);
             }
@@ -204,10 +222,20 @@ jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, sele
     }, 50);
 
     $("#btn_single_reg").on("click", function(e) {
-        var $target = $("#oid_config").find("li.active a");
+        var sid = -1,
+            oid = -1;
 
-        var sid = parseInt($target.data("sid")),
+        if(targetInstance.getMenu() == "instance") {
+            var $target = $("#oid_config").find("li.active a");
+
+            sid = parseInt($target.data("sid"));
             oid = parseInt($target.attr("value"));
+        } else {
+            var $target = $("#oid_config").find("a.active");
+
+            sid = parseInt($target.attr("value"));
+            oid = 0;
+        }
 
         var names = [],
             values = [],
@@ -229,10 +257,13 @@ jui.ready([ "ui", "selectbox", "chart.builder", "util.base" ], function(ui, sele
 });
 
 function getParameters(sid, oid, metrics) {
-    var stime = datePicker.getTime(),
-        etime = stime + (1000 * 60 * 60 * 24),
+    var ldate = endDate.getDate().clone();
+    ldate.add(1, "days").valueOf();
+
+    var stime = startDate.getTime(),
+        etime = ldate.valueOf(),
         interval = 1,
-        limit = 1440;
+        limit = (etime - stime) / (1000 * 60);
 
     var funcs = [],
         otypes = [],
@@ -242,10 +273,6 @@ function getParameters(sid, oid, metrics) {
         funcs.push(-1);
         otypes.push(OTypeDef.SYSTEM);
         oids.push(oid);
-    }
-
-    if(isNaN(oid)) {
-        return null;
     }
 
     return 'sid=' + sid + '&startTime=' + stime + '&endTime=' + etime + '&intervalInMinute=' + interval +
@@ -274,34 +301,39 @@ function updateMetricsData(sid, oid, names, values, callback) {
         callback(data);
         isInit = false;
     } else {
-        if(!isNaN(oid)) {
-            $.getJSON('/db/metrics', getParameters(sid, oid, values), function (json) {
-                for(var y = 0; y < names.length; y++) {
-                    for(var x = 0; x < names.length; x++) {
-                        var yData = [],
-                            xData = [];
-
-                        for(var i = 0; i < json.length; i++) {
-                            yData.push(json[i][y + 1]);
-                            xData.push(json[i][x + 1]);
-                        }
-
-                        var result = calculateRegression(xData, yData);
-
-                        data.push({
-                            xIndex: x,
-                            yIndex: y,
-                            xLabel: names[x],
-                            yLabel: names[y],
-                            value: (isNaN(result.regression.r2)) ? 0 : result.regression.r2,
-                            result: result
-                        });
-                    }
-                }
-
-                callback(data);
-            });
+        if(isNaN(sid) || isNaN(oid)) {
+            alert(i18n.get("M0015"));
+            return;
         }
+
+        $.getJSON('/db/metrics', getParameters(sid, oid, values), function (json) {
+            console.log("data count : " + json.length);
+
+            for(var y = 0; y < names.length; y++) {
+                for(var x = 0; x < names.length; x++) {
+                    var yData = [],
+                        xData = [];
+
+                    for(var i = 0; i < json.length; i++) {
+                        yData.push(json[i][y + 1]);
+                        xData.push(json[i][x + 1]);
+                    }
+
+                    var result = calculateRegression(xData, yData);
+
+                    data.push({
+                        xIndex: x,
+                        yIndex: y,
+                        xLabel: names[x],
+                        yLabel: names[y],
+                        value: (isNaN(result.regression.r2)) ? 0 : result.regression.r2,
+                        result: result
+                    });
+                }
+            }
+
+            callback(data);
+        });
     }
 }
 
