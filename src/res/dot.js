@@ -53,9 +53,9 @@ jui.define("chart.brush.dot", [ "util.base" ], function(_) {
     DotBrush.setup = function() {
         return {
             /** @cfg {Number} [size=7]  Determines the size of a starter. */
-            size: 10,
+            size: 9,
             /** @cfg {Number} [opacity=1]  Stroke opacity.  */
-            opacity: 0.5,
+            opacity: 0.4,
             /** @cfg {Boolean} [clip=false] If the brush is drawn outside of the chart, cut the area. */
             clip: false
         };
