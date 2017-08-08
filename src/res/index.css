@@ -22,3 +22,11 @@
 #regression-main #metric_tab {
     padding-top: 15px;
 }
+
+#metric_modal .chartblock .interval {
+    position: absolute;
+    top: 35px;
+    right: 50px;
+    font-size: 10px;
+    font-weight: bold;
+}

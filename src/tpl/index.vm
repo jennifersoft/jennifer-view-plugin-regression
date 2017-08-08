@@ -40,10 +40,8 @@
             </div>
 
             <div class="box-component">
-                <div class="group">
-                    <div class="label small">Interval : 60sec</div>
-                    <a id="btn_single_reg" class="btn small">Run</a>
-                </div>
+                <a id="btn_single_reg" class="btn small">Run</a>
+                <a id="btn_download" class="btn small">Screenshot</a>
             </div>
         </div>
     </div>
@@ -65,8 +63,9 @@
     </div>
     <div class="body">
         <div class="row">
-            <div class="col" style="width: 400px;">
+            <div class="col chartblock" style="width: 400px;">
                 <div id="metric_detail_chart"></div>
+                <span class="interval">(Interval : 60sec)</span>
             </div>
             <div class="col" id="metric_detail_tables" style="width: 550px; padding-top: 50px"></div>
         </div>

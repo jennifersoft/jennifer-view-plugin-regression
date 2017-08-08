@@ -254,6 +254,19 @@ jui.ready([ "ui", "selectbox", "chart.builder", "util.base", "util.color" ], fun
             metricsChart.render(true);
         });
     });
+
+    $("#btn_download").on("click", function(e) {
+        var target = targetInstance.getName(),
+            sdate = startDate.getDate().format("YYYYMMDD"),
+            edate = endDate.getDate().format("YYYYMMDD");
+
+        var name = (sdate == edate) ? sdate : sdate + "-" + edate;
+        if(target.length > 0) {
+            name = target[0] + "_" + name;
+        }
+
+        metricsChart.svg.downloadImage(name + ".png");
+    });
 });
 
 function getParameters(sid, oid, metrics) {
