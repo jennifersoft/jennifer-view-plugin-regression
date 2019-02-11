@@ -2,7 +2,9 @@ var targetInstance = null, metricsBox = null, startDate = null, endDate = null,
     metricsChart = null, metricsDetailChart = null, metricsModal = null, tplTable = null,
     colorMap = null, isInit = true;
 
-jui.ready([ "ui", "selectbox", "chart.builder", "util.base", "util.color" ], function(ui, select, builder, _, color) {
+jui.ready([ "ui", "selectbox", "util.base", "util.color" ], function(ui, select, _, color) {
+    var builder = graph.include("chart.builder");
+
     colorMap = color.map["pink"](20);
 
     tplTable = _.template($("#tpl_detail_tables").html());

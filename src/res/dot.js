@@ -1,4 +1,4 @@
-jui.define("chart.brush.dot", [ "util.base" ], function(_) {
+graph.define("chart.brush.dot", [ "util.base" ], function(_) {
     /**
      * @class chart.brush.dot
      * @extends chart.brush.core
